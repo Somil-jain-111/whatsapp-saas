@@ -1,0 +1,236 @@
+openapi: 3.0.3
+info: { title: WhatsApp SaaS Billing and Analytics API, version: 1.1.0 }
+servers: [{ url: /api/v1 }]
+paths:
+  /billing/plans:
+    get:
+      {
+        responses:
+          {
+            "200":
+              {
+                description: Active versioned plans,
+                features,
+                and regional prices,
+              },
+          },
+      }
+  /billing/prices:
+    get:
+      {
+        responses:
+          {
+            "200": { description: Active prices filtered by country/currency },
+          },
+      }
+  /billing/trial:
+    post:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses:
+          {
+            "201": { description: One-time trial started },
+            "409": { description: Trial unavailable },
+          },
+      }
+  /billing/checkout:
+    post:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "201": { description: Stripe-hosted Checkout URL } },
+      }
+  /billing/subscription:
+    get:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "200": { description: Current subscription } },
+      }
+  /billing/subscription/change:
+    post:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses:
+          {
+            "201":
+              {
+                description: Provider change accepted; webhook remains authoritative,
+              },
+          },
+      }
+  /billing/subscription/cancel:
+    post:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "201": { description: Cancellation accepted } },
+      }
+  /billing/subscription/reactivate:
+    post:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "201": { description: Reactivation accepted } },
+      }
+  /billing/portal-session:
+    post:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses:
+          { "201": { description: Provider-hosted billing portal URL } },
+      }
+  /billing/invoices:
+    get:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "200": { description: Tenant invoices } },
+      }
+  /billing/invoices/{id}:
+    get:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/OrganizationId" },
+            { $ref: "#/components/parameters/Id" },
+          ],
+        responses:
+          {
+            "200": { description: Tenant invoice with hosted/PDF URL },
+            "404": { description: Not found },
+          },
+      }
+  /billing/payments:
+    get:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "200": { description: Tenant payment history } },
+      }
+  /usage/overview:
+    get:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "200": { description: Current-period usage } },
+      }
+  /usage/quotas:
+    get:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses:
+          { "200": { description: Quota, used, and remaining values } },
+      }
+  /usage/history:
+    get:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "200": { description: Durable usage events } },
+      }
+  /analytics/overview:
+    get:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "200": { description: Message delivery/read overview } },
+      }
+  /analytics/campaigns:
+    get:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "200": { description: Campaign analytics } },
+      }
+  /analytics/templates:
+    get:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "200": { description: Template performance } },
+      }
+  /analytics/messages:
+    get:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "200": { description: Message analytics records } },
+      }
+  /analytics/costs:
+    get:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses:
+          { "200": { description: Estimated or unavailable Meta costs } },
+      }
+  /reports/exports:
+    get:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "200": { description: Tenant report jobs } },
+      }
+    post:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses:
+          {
+            "202": { description: CSV/XLSX/PDF report job accepted },
+            "409": { description: Quota exceeded },
+          },
+      }
+  /reports/exports/{id}/download:
+    get:
+      {
+        security: [{ bearerAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/OrganizationId" },
+            { $ref: "#/components/parameters/Id" },
+          ],
+        responses:
+          {
+            "200": { description: Private report file },
+            "404": { description: Unavailable or expired },
+          },
+      }
+  /webhooks/payments/stripe:
+    servers: [{ url: / }]
+    post:
+      {
+        security: [],
+        responses:
+          {
+            "200":
+              {
+                description: Signature verified and event reconciled idempotently,
+              },
+            "403": { description: Invalid or stale signature },
+          },
+      }
+components:
+  securitySchemes:
+    { bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT } }
+  parameters:
+    OrganizationId:
+      {
+        name: x-organization-id,
+        in: header,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+    Id:
+      {
+        name: id,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }

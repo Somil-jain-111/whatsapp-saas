@@ -1,0 +1,208 @@
+openapi: 3.0.3
+info: { title: WhatsApp SaaS Messaging API, version: 1.0.0 }
+servers: [{ url: /api/v1 }]
+security: [{ bearerAuth: [] }]
+paths:
+  /contacts:
+    get:
+      {
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "200": { description: Paginated tenant contacts } },
+      }
+    post:
+      {
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        requestBody:
+          {
+            required: true,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/Contact" } },
+              },
+          },
+        responses:
+          {
+            "201": { description: Contact created },
+            "409": { description: Duplicate phone },
+          },
+      }
+  /contacts/import:
+    post:
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              multipart/form-data:
+                {
+                  schema:
+                    {
+                      type: object,
+                      required: [file],
+                      properties: { file: { type: string, format: binary } },
+                    },
+                },
+            },
+        }
+      responses:
+        {
+          "202": { description: Import accepted },
+          "400": { description: Invalid or oversized file },
+        }
+  /contacts/imports:
+    get:
+      {
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "200": { description: Recent imports } },
+      }
+  /contacts/imports/{id}:
+    get:
+      {
+        parameters:
+          [
+            { $ref: "#/components/parameters/OrganizationId" },
+            { $ref: "#/components/parameters/Id" },
+          ],
+        responses:
+          {
+            "200": { description: Import status and errors },
+            "404": { description: Not found },
+          },
+      }
+  /messages/template:
+    post:
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/TemplateMessage" } },
+            },
+        }
+      responses:
+        {
+          "202": { description: Durable message accepted },
+          "409": { description: Consent, template, or quota conflict },
+        }
+  /messages/bulk:
+    post:
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/Campaign" } },
+            },
+        }
+      responses: { "202": { description: Campaign accepted } }
+  /messages:
+    get:
+      {
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "200": { description: Paginated masked message log } },
+      }
+  /campaigns:
+    get:
+      {
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        responses: { "200": { description: Paginated campaigns } },
+      }
+    post:
+      {
+        parameters: [{ $ref: "#/components/parameters/OrganizationId" }],
+        requestBody:
+          {
+            required: true,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/Campaign" } },
+              },
+          },
+        responses: { "201": { description: Draft campaign created } },
+      }
+  /campaigns/{id}/launch:
+    post:
+      {
+        parameters:
+          [
+            { $ref: "#/components/parameters/OrganizationId" },
+            { $ref: "#/components/parameters/Id" },
+          ],
+        responses:
+          {
+            "201": { description: Campaign queued or scheduled },
+            "409": { description: Validation or quota conflict },
+          },
+      }
+components:
+  securitySchemes:
+    { bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT } }
+  parameters:
+    OrganizationId:
+      {
+        name: x-organization-id,
+        in: header,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+    Id:
+      {
+        name: id,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+  schemas:
+    Contact:
+      type: object
+      additionalProperties: false
+      required: [fullName, countryCode, phoneE164]
+      properties:
+        fullName: { type: string, maxLength: 150 }
+        countryCode: { type: string, pattern: "^[A-Z]{2}$" }
+        phoneE164: { type: string, pattern: '^\+[1-9][0-9]{1,14}$' }
+        email: { type: string, format: email, maxLength: 254 }
+    TemplateMessage:
+      type: object
+      additionalProperties: false
+      required: [senderId, templateId, language, parameters]
+      properties:
+        contactId: { type: string, format: uuid }
+        recipientPhone: { type: string, pattern: '^\+[1-9][0-9]{1,14}$' }
+        senderId: { type: string, format: uuid }
+        templateId: { type: string, format: uuid }
+        language: { type: string, maxLength: 20 }
+        parameters: { type: object, additionalProperties: { type: string } }
+        idempotencyKey: { type: string, maxLength: 255 }
+    Campaign:
+      type: object
+      additionalProperties: false
+      required: [name, senderId, templateId, recipients]
+      properties:
+        name: { type: string, maxLength: 150 }
+        senderId: { type: string, format: uuid }
+        templateId: { type: string, format: uuid }
+        scheduledAt: { type: string, format: date-time }
+        timezone: { type: string, maxLength: 64, default: UTC }
+        recipients:
+          {
+            type: array,
+            maxItems: 10000,
+            items:
+              {
+                type: object,
+                required: [contactId],
+                properties:
+                  {
+                    contactId: { type: string, format: uuid },
+                    parameters: { type: object },
+                  },
+              },
+          }

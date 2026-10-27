@@ -1,0 +1,106 @@
+openapi: 3.0.3
+info:
+  title: WhatsApp SaaS Identity API
+  version: 1.1.0
+servers:
+  - url: /api/v1
+paths:
+  /auth/register:
+    post:
+      summary: Create a pending customer, workspace, and owner membership
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Register" }
+      responses:
+        "201": { description: Account created; email verification required }
+        "409": { description: Email or workspace slug already exists }
+        "422": { description: Request validation failed }
+  /auth/verify-email:
+    post:
+      summary: Consume an email-verification token and start a customer session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VerifyEmail" }
+      responses:
+        "200": { description: Email verified and session issued }
+        "401": { description: Invalid or expired token }
+  /auth/resend-verification:
+    post:
+      summary: Issue a replacement verification token without revealing account existence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties: { email: { type: string, format: email } }
+      responses:
+        "202": { description: Request accepted }
+  /auth/invitations/accept:
+    post:
+      summary: Accept a workspace invitation and start a customer session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AcceptInvitation" }
+      responses:
+        "200": { description: Invitation accepted and session issued }
+        "401": { description: Invalid invitation or existing-user credentials }
+        "409": { description: User is already a workspace member }
+components:
+  schemas:
+    Register:
+      type: object
+      required:
+        [
+          fullName,
+          email,
+          password,
+          name,
+          slug,
+          countryCode,
+          currencyCode,
+          timezone,
+        ]
+      properties:
+        fullName: { type: string, maxLength: 150 }
+        email: { type: string, format: email, maxLength: 254 }
+        password:
+          { type: string, format: password, minLength: 8, maxLength: 128 }
+        name: { type: string, maxLength: 200 }
+        slug:
+          {
+            type: string,
+            pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            maxLength: 100,
+          }
+        countryCode: { type: string, pattern: "^[A-Z]{2}$" }
+        currencyCode: { type: string, pattern: "^[A-Z]{3}$" }
+        timezone: { type: string, maxLength: 64 }
+    Token:
+      type: object
+      required: [token]
+      properties: { token: { type: string, minLength: 32, maxLength: 512 } }
+    VerifyEmail:
+      allOf:
+        - { $ref: "#/components/schemas/Token" }
+        - type: object
+          required: [password]
+          properties:
+            password:
+              { type: string, format: password, minLength: 8, maxLength: 128 }
+    AcceptInvitation:
+      allOf:
+        - { $ref: "#/components/schemas/Token" }
+        - type: object
+          required: [fullName, password]
+          properties:
+            fullName: { type: string, maxLength: 150 }
+            password:
+              { type: string, format: password, minLength: 8, maxLength: 128 }

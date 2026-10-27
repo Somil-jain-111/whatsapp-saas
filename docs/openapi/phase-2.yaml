@@ -1,0 +1,309 @@
+openapi: 3.0.3
+info:
+  title: WhatsApp SaaS Phase 2 API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+paths:
+  /meta/app-configuration:
+    get:
+      summary: Read Meta Embedded Signup availability
+      responses: { "200": { description: Redacted configuration status } }
+    post:
+      summary: Save a tenant-owned Meta developer app configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveMetaAppConfiguration" }
+      responses:
+        "201":
+          description: Configuration saved; webhook verification token is returned once
+  /meta/onboarding/session:
+    post:
+      summary: Create a single-use Embedded Signup state
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      responses:
+        {
+          "201": { description: Session created, or platform Meta onboarding configuration required },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "403": { $ref: "#/components/responses/Forbidden" },
+        }
+  /meta/onboarding/complete:
+    post:
+      summary: Exchange an Embedded Signup code and synchronize authorized assets
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/CompleteOnboarding" } },
+          }
+      responses:
+        {
+          "201": { description: Connected },
+          "409": { description: Provider asset is already owned },
+        }
+  /meta/connections:
+    get:
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      responses: { "200": { description: Tenant connections } }
+  /meta/connections/{id}:
+    parameters:
+      [
+        { $ref: "#/components/parameters/OrganizationId" },
+        { $ref: "#/components/parameters/Id" },
+      ]
+    get:
+      {
+        responses:
+          {
+            "200": { description: Connection },
+            "404": { description: Not found },
+          },
+      }
+    delete:
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      required: [reason],
+                      properties: { reason: { type: string, maxLength: 500 } },
+                    },
+                },
+            },
+        }
+      responses: { "204": { description: Disconnected } }
+  /meta/connections/{id}/sync:
+    post:
+      parameters:
+        [
+          { $ref: "#/components/parameters/OrganizationId" },
+          { $ref: "#/components/parameters/Id" },
+        ]
+      responses: { "202": { description: Sync queued } }
+  /whatsapp/accounts:
+    get:
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      responses: { "200": { description: Accounts } }
+  /whatsapp/accounts/{id}:
+    get:
+      parameters:
+        [
+          { $ref: "#/components/parameters/OrganizationId" },
+          { $ref: "#/components/parameters/Id" },
+        ]
+      responses: { "200": { description: Account } }
+  /whatsapp/accounts/{id}/phone-numbers:
+    get:
+      parameters:
+        [
+          { $ref: "#/components/parameters/OrganizationId" },
+          { $ref: "#/components/parameters/Id" },
+        ]
+      responses: { "200": { description: Phone numbers } }
+  /whatsapp/phone-numbers/{id}/default:
+    patch:
+      parameters:
+        [
+          { $ref: "#/components/parameters/OrganizationId" },
+          { $ref: "#/components/parameters/Id" },
+        ]
+      responses: { "200": { description: Default selected } }
+  /templates:
+    get:
+      parameters:
+        [
+          { $ref: "#/components/parameters/OrganizationId" },
+          {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100 },
+          },
+          { name: cursor, in: query, schema: { type: string, format: uuid } },
+        ]
+      responses: { "200": { description: Templates } }
+    post:
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/SaveTemplate" } },
+            },
+        }
+      responses:
+        {
+          "201": { description: Draft created },
+          "409": { description: Duplicate },
+        }
+  /templates/{id}:
+    parameters:
+      [
+        { $ref: "#/components/parameters/OrganizationId" },
+        { $ref: "#/components/parameters/Id" },
+      ]
+    get:
+      { responses: { "200": { description: Template and current components } } }
+    patch:
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/SaveTemplate" } },
+            },
+        }
+      responses:
+        {
+          "200": { description: Draft version created },
+          "409": { description: Template cannot be edited },
+        }
+    delete: { responses: { "204": { description: Archived locally } } }
+  /templates/{id}/submit:
+    post:
+      parameters:
+        [
+          { $ref: "#/components/parameters/OrganizationId" },
+          { $ref: "#/components/parameters/Id" },
+        ]
+      responses:
+        {
+          "201": { description: Submitted },
+          "502":
+            { description: Provider outcome uncertain; reconciliation queued },
+        }
+  /templates/{id}/duplicate:
+    post:
+      parameters:
+        [
+          { $ref: "#/components/parameters/OrganizationId" },
+          { $ref: "#/components/parameters/Id" },
+        ]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      required: [name],
+                      properties:
+                        { name: { type: string, pattern: "^[a-z0-9_]+$" } },
+                    },
+                },
+            },
+        }
+      responses: { "201": { description: Draft copy created } }
+  /templates/sync:
+    post:
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      responses: { "202": { description: Sync queued } }
+  /integrations/health:
+    get:
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      responses: { "200": { description: Tenant integration health } }
+  /integrations/errors:
+    get:
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      responses: { "200": { description: Sanitized integration errors } }
+  /webhooks/meta:
+    servers: [{ url: / }]
+    security: []
+    get:
+      {
+        summary: Meta verification challenge,
+        responses: { "200": { description: Challenge } },
+      }
+    post:
+      {
+        summary: Signed Meta event receiver,
+        responses:
+          {
+            "200": { description: Accepted },
+            "403": { description: Invalid signature },
+          },
+      }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    OrganizationId:
+      {
+        name: x-organization-id,
+        in: header,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+    Id:
+      {
+        name: id,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+  schemas:
+    SaveMetaAppConfiguration:
+      type: object
+      additionalProperties: false
+      required: [appId, appSecret, configurationId, graphApiVersion]
+      properties:
+        appId: { type: string, pattern: '^\d{1,64}$' }
+        appSecret: { type: string, minLength: 16, maxLength: 255, writeOnly: true }
+        configurationId: { type: string, pattern: '^\d{1,64}$' }
+        graphApiVersion: { type: string, pattern: '^v\d+\.\d+$' }
+    CompleteOnboarding:
+      type: object
+      additionalProperties: false
+      required: [state, code, wabaId]
+      properties:
+        {
+          state: { type: string },
+          code: { type: string },
+          wabaId: { type: string, pattern: '^\\d{1,64}$' },
+        }
+    SaveTemplate:
+      type: object
+      additionalProperties: false
+      required: [accountId, name, language, category, components]
+      properties:
+        accountId: { type: string, format: uuid }
+        name: { type: string, pattern: "^[a-z0-9_]+$" }
+        language: { type: string }
+        category: { type: string, enum: [MARKETING, UTILITY, AUTHENTICATION] }
+        components:
+          {
+            type: array,
+            minItems: 1,
+            maxItems: 12,
+            items:
+              {
+                type: object,
+                required: [type, payload],
+                properties:
+                  {
+                    type:
+                      { type: string, enum: [HEADER, BODY, FOOTER, BUTTONS] },
+                    payload: { type: object },
+                  },
+              },
+          }
+  responses:
+    Unauthorized:
+      { description: Missing, invalid, expired, or revoked access session }
+    Forbidden: { description: Active tenant membership and permission required }

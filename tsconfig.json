@@ -1,0 +1,51 @@
+// {
+//   "compilerOptions": {
+//     "module": "commonjs",
+//     "declaration": true,
+//     "removeComments": true,
+//     "emitDecoratorMetadata": true,
+//     "experimentalDecorators": true,
+//     "allowSyntheticDefaultImports": true,
+//     "target": "ES2021",
+//     "sourceMap": true,
+//     "outDir": "./dist",
+//     "baseUrl": "./",
+//     "incremental": true,
+//     "skipLibCheck": true,
+//     "strictNullChecks": false,
+//     "noImplicitAny": false,
+//     "strictBindCallApply": false,
+//     "forceConsistentCasingInFileNames": false,
+//     "noFallthroughCasesInSwitch": false
+//   }
+// }
+
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2021",
+    "esModuleInterop": true, // ✅ Helps with default imports
+    "moduleResolution": "node", // ✅ Makes import path resolution standard
+    "resolveJsonModule": true, // ✅ Allows importing JSON if needed
+    "skipLibCheck": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "strict": false,
+    "outDir": "./dist",
+    "sourceMap": true,
+    "incremental": true,
+    "baseUrl": "./"
+  },
+  "exclude": [
+    "dist",
+    "frontend",
+    "node_modules",
+    "src/default/common/helper/auth-token.helper.ts",
+    "src/default/common/helper/date.helper.ts",
+    "src/default/common/helper/otp.helper.ts",
+    "src/default/common/stratagy/jwt.strategy.ts",
+    "src/default/common/stratagy/local.strategy.ts",
+    "src/default/common/validators/index.ts",
+    "src/default/common/validators/user.validator.ts"
+  ]
+}

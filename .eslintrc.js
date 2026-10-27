@@ -1,0 +1,26 @@
+module.exports = {
+  root: true,
+  parser: '@typescript-eslint/parser',
+  parserOptions: { project: './tsconfig.json', sourceType: 'module' },
+  plugins: ['@typescript-eslint'],
+  extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended', 'prettier'],
+  env: { node: true, jest: true },
+  ignorePatterns: [
+    'dist/',
+    'coverage/',
+    'node_modules/',
+    'src/default/common/helper/auth-token.helper.ts',
+    'src/default/common/helper/date.helper.ts',
+    'src/default/common/helper/otp.helper.ts',
+    'src/default/common/stratagy/jwt.strategy.ts',
+    'src/default/common/stratagy/local.strategy.ts',
+    'src/default/common/validators/index.ts',
+    'src/default/common/validators/user.validator.ts',
+  ],
+  rules: {
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/no-require-imports': 'off',
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+  },
+};
